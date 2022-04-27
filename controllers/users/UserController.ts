@@ -50,13 +50,13 @@ export default class UserController implements UserControllerI {
 
             // for testing. Not RESTful
             app.get("/api/users/create",
-              UserController.userController.createUser);
+                UserController.userController.createUser);
             app.get("/api/users/id/:uid/delete",
-              UserController.userController.deleteUser);
+                UserController.userController.deleteUser);
             app.get("/api/users/username/:username/delete",
-              UserController.userController.deleteUsersByUsername);
+                UserController.userController.deleteUsersByUsername);
             app.get("/api/users/delete",
-              UserController.userController.deleteAllUsers);
+                UserController.userController.deleteAllUsers);
         }
         return UserController.userController;
     }
@@ -80,10 +80,27 @@ export default class UserController implements UserControllerI {
      * @param {Response} res Represents response to client, including the
      * body formatted as JSON containing the user that matches the user ID
      */
-    findUserById = (req: Request, res: Response) =>
-        UserController.userDao.findUserById(req.params.uid)
-            .then((user: User) => res.json(user));
-    
+    findUserById = (req: Request, res: Response) => {
+        console.log("request: ", req.body);
+        console.log("req.params.uid: ", req.params.uid);
+        // @ts-ignore
+        console.log("req.session.uid: ", req.session['profile']);
+        // @ts-ignore
+        let userId = req.params.uid === "my" && req.session['profile'] ?
+            // @ts-ignore
+            req.session['profile']._id : req.params.uid;
+        console.log("userId: ", userId);
+        if (userId === "my") {
+            res.sendStatus(503);
+            return;
+        }
+        console.log("Animesh after user id");
+        UserController.userDao.findUserById(userId)
+            .then((user: User) => {
+                console.log("user: ", user);
+                res.json(user)});
+    }
+
     /**
      * Creates a new user instance
      * @param {Request} req Represents request from client, including body
@@ -98,7 +115,7 @@ export default class UserController implements UserControllerI {
         UserController.userDao.createUser(req.body)
             .then((user: User) => res.json(user))
     };
-    
+
     /**
      * Modifies an existing user instance
      * @param {Request} req Represents request from client, including path
@@ -106,10 +123,24 @@ export default class UserController implements UserControllerI {
      * @param {Response} res Represents response to client, including status
      * on whether updating a user was successful or not
      */
-    updateUser = (req: Request, res: Response) =>
-        UserController.userDao.updateUser(req.params.uid, req.body)
+    updateUser = (req: Request, res: Response) => {
+        console.log("request: ", req.body);
+        console.log("req.params.uid: ", req.params.uid);
+        // @ts-ignore
+        console.log("req.session.uid: ", req.session['profile']);
+        // @ts-ignore
+        let userId = req.params.uid === "my" && req.session['profile'] ?
+            // @ts-ignore
+            req.session['profile']._id : req.params.uid;
+        console.log("userId: ", userId);
+        if (userId === "my") {
+            res.sendStatus(503);
+            return;
+        }
+        UserController.userDao.updateUser(userId, req.body)
             .then((status) => res.send(status));
-    
+    }
+
     /**
      * Removes a user instance from the database
      * @param {Request} req Represents request from client, including path
@@ -117,13 +148,21 @@ export default class UserController implements UserControllerI {
      * @param {Response} res Represents response to client, including status
      * on whether deleting a user was successful or not
      */
-    deleteUser = (req: Request, res: Response) =>
-        UserController.userDao.deleteUser(req.params.uid)
+    deleteUser = (req: Request, res: Response) => {
+        // @ts-ignore
+        let userId = req.params.uid === "my" && req.session['profile'] ?
+            // @ts-ignore
+            req.session['profile']._id : req.params.uid;
+        if (userId === "my") {
+            res.sendStatus(503);
+            return;
+        }
+        UserController.userDao.deleteUser(userId)
             .then((status) => res.send(status));
-    
+    }
     /**
      * Removes all user instances from the database. Useful for testing
-     * @param {Request} req Represents request from client 
+     * @param {Request} req Represents request from client
      * @param {Response} res Represents response to client, including status
      * on whether deleting all users was successful or not
      */
@@ -131,7 +170,13 @@ export default class UserController implements UserControllerI {
         UserController.userDao.deleteAllUsers()
             .then((status) => res.send(status));
 
+    /**
+     * Removes the user instance from the database. Useful for testing
+     * @param {Request} req Represents request from client
+     * @param {Response} res Represents response to client, including status
+     * on whether deleting all users was successful or not
+     */
     deleteUsersByUsername = (req: Request, res: Response) =>
-      UserController.userDao.deleteUsersByUsername(req.params.username)
-        .then(status => res.send(status));
+        UserController.userDao.deleteUsersByUsername(req.params.username)
+            .then(status => res.send(status));
 };
